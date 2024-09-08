@@ -113,3 +113,55 @@ interviews %>%
   summarize(village_mean = mean(no_membrs), 
             village_max = max(no_membrs), 
             village_min = min(no_membrs))
+
+# Session 5: Data Wrangling with tidyr
+View(interviews)
+
+interviews %>% 
+  select(key_ID) %>% 
+  distinct() %>% 
+  count() # 131
+
+interviews %>% 
+  select(instanceID) %>% 
+  distinct() %>% 
+  count() # 131
+
+# Pivoting Wider
+interviews_items_owned <- interviews
+# separate_longer_delim
+interviews_items_owned <- interviews_items_owned %>% 
+  separate_longer_delim(items_owned, delim = ";") #631 rows now
+# some didn't own anything so we want to replace that NA value
+interviews_items_owned <- interviews_items_owned %>% 
+  replace_na(list(items_owned = "no_listed_items"))
+# creating a logical vector that tells you if someone had that particular item
+interviews_items_owned <- interviews_items_owned %>% 
+  mutate(items_owned_logical = TRUE)
+# then we switch back from long to wide
+interviews_items_owned <- interviews_items_owned %>% 
+  pivot_wider(names_from = items_owned, 
+              values_from = items_owned_logical) # see all those NAs
+              #values_fill = list(items_owned_logical = FALSE)
+# now we fix those NAs will values_fill argument
+interviews_items_owned <- interviews_items_owned %>% 
+  pivot_wider(names_from = items_owned, 
+              values_from = items_owned_logical, 
+              values_fill = list(items_owned_logical = FALSE))
+
+dim(interviews_items_owned) #back to 131 rows
+
+interviews_items_owned %>% 
+  filter(bicycle) %>% 
+  group_by(village) %>% 
+  count(bicycle)
+
+interviews_items_owned %>% 
+  group_by(village) %>% 
+  count(bicycle)
+
+interviews_items_owned %>% 
+  select(-no_listed_items) %>% 
+  mutate(number_items = rowSums(select(., bicycle:car))) %>% 
+  group_by(village) %>% 
+  summarize(mean_items = mean(number_items))
