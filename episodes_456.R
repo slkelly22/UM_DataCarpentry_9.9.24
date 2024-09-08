@@ -197,3 +197,111 @@ interviews_plotting <- interviews %>%
   mutate(number_items = rowSums(select(., bicycle:car)))
 
 write_csv(interviews_plotting, file = "data_output/interviews_plotting.csv")
+
+# Episode 6: Data Visualization with ggplot2
+
+interviews_plotting %>% 
+  ggplot()
+
+interviews_plotting %>% 
+  ggplot(aes(x = no_membrs, y = number_items))
+
+interviews_plotting %>% 
+  ggplot(aes(x = no_membrs, y = number_items)) + geom_point()
+
+interviews_plotting %>% 
+  ggplot(aes(x = no_membrs, y = number_items)) + geom_point(alpha = 0.3)
+
+interviews_plotting %>% 
+  ggplot(aes(x = no_membrs, y = number_items)) + geom_jitter(alpha = 0.2, width = 0.2, height = 0.2, color = "blue")
+
+interviews_plotting %>% 
+  ggplot(aes(x = no_membrs, y = number_items)) + geom_jitter(aes(color = village), alpha = 0.2, width = 0.2, height = 0.2)
+
+interviews_plotting %>% 
+  ggplot(aes(x = no_membrs, y = number_items, color = village)) + geom_jitter(alpha = 0.2, width = 0.2, height = 0.2)
+
+interviews_plotting %>% 
+  ggplot(aes(x = no_membrs, y = number_items, color = village)) + geom_count()
+
+interviews_plotting %>% 
+  ggplot(aes(x = no_membrs, y = number_items, size = no_membrs, color = village)) + geom_point()
+
+# Exercise
+interviews_plotting %>% 
+  ggplot(aes(x = village, y = rooms, color = respondent_wall_type)) + geom_point() + geom_jitter()
+
+# Boxplots
+interviews_plotting %>% 
+  ggplot(aes(x = respondent_wall_type, y = rooms)) + geom_boxplot()
+
+interviews_plotting %>% 
+  ggplot(aes(x = respondent_wall_type, y = rooms)) + geom_boxplot() + geom_point()
+
+interviews_plotting %>% 
+  ggplot(aes(x = respondent_wall_type, y = rooms)) + geom_boxplot(alpha = 0) + geom_jitter(color = "tomato", width = 0.2, height = 0.2)
+
+# Exercises
+
+# Barplots
+interviews_plotting %>% 
+  ggplot(aes(x = respondent_wall_type)) + geom_bar()
+
+interviews_plotting %>% 
+  ggplot(aes(x = respondent_wall_type)) + geom_bar(aes(fill = village))
+
+interviews_plotting %>% 
+  ggplot(aes(x = respondent_wall_type)) + geom_bar(aes(fill = village), position = "dodge")
+
+percent_wall_type <- interviews_plotting %>% 
+  filter(respondent_wall_type !="cement") %>% 
+  count(village, respondent_wall_type) %>% 
+  group_by(village) %>% 
+  mutate(percent = (n/sum(n)) * 100) %>% 
+  ungroup()
+
+percent_wall_type %>% 
+  ggplot(aes(x = village, y = percent, fill = respondent_wall_type)) + geom_bar(stat = "identity", position = "dodge")
+
+# Adding labels and titles
+percent_wall_type %>% 
+  ggplot(aes(x = village, y = percent, fill = respondent_wall_type)) + geom_bar(stat = "identity", position = "dodge") + labs(title = "Proportion of wall type by village", fill = "Type of Home in Wall", x = "Village", y = "Percent")
+
+# Faceting - changes x and removes fill 
+percent_wall_type %>% 
+  ggplot(aes(x = respondent_wall_type, y = percent)) + geom_bar(stat = "identity", position = "dodge") + labs(title = "Proportion of wall type by village", x = "Wall Type", y = "Percent") + facet_wrap(~village)
+
+# Adding theme and removing back grid
+percent_wall_type %>% 
+  ggplot(aes(x = respondent_wall_type, y = percent)) + geom_bar(stat = "identity", position = "dodge") + labs(title = "Proportion of wall type by village", x = "Wall Type", y = "Percent") + facet_wrap(~village) + theme_bw() + theme(panel.grid = element_blank())
+
+# Items - tricky code here creating the new df
+percent_items <- interviews_plotting %>% 
+  group_by(village) %>% 
+  summarize(across(bicycle:no_listed_items, ~ sum(.x) / n() * 100)) %>% 
+  pivot_longer(bicycle:no_listed_items, names_to = "items", values_to = "percent")
+
+percent_items %>% 
+  ggplot(aes(x = village, y = percent)) + geom_bar(stat = "identity", position = "dodge") + facet_wrap(~ items) + theme_bw() + theme(panel.grid = element_blank())
+
+# Exercise - look at two different themes
+
+# Customization
+# In case we skip the items plot, let me see if we can customize the facet_wrap wall type plot
+
+# increased font size
+percent_wall_type %>% 
+  ggplot(aes(x = respondent_wall_type, y = percent)) + geom_bar(stat = "identity", position = "dodge") + labs(title = "Proportion of wall type by village", x = "Wall Type", y = "Percent") + facet_wrap(~village) + theme_bw() + theme(panel.grid = element_blank(), text = element_text(size = 14))
+# angle the x axis
+percent_wall_type %>% 
+  ggplot(aes(x = respondent_wall_type, y = percent)) + geom_bar(stat = "identity", position = "dodge") + labs(title = "Proportion of wall type by village", x = "Wall Type", y = "Percent") + facet_wrap(~village) + theme_bw() + theme(panel.grid = element_blank(), text = element_text(size = 14), axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))
+
+# saving a theme
+grey_theme <- theme(axis.text.x = element_text(color = "grey20", size = 12, angle = 45, hjust = 0.5, vjust = 0.5), axis.text.y = element_text(color = "grey20", size = 12), text = element_text(size = 14), plot.title = element_text(hjust = 0.5))
+
+# applying that theme to my plot
+plot <- percent_wall_type %>% 
+  ggplot(aes(x = respondent_wall_type, y = percent)) + geom_bar(stat = "identity", position = "dodge") + labs(title = "Proportion of wall type by village", x = "Wall Type", y = "Percent") + facet_wrap(~village) + grey_theme
+
+# saving a plot with ggsave
+ggsave("fig_output/percent_wall_type.png", plot, width = 15, height = 10)
