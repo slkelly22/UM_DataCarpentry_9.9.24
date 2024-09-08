@@ -114,7 +114,7 @@ interviews %>%
             village_max = max(no_membrs), 
             village_min = min(no_membrs))
 
-# Session 5: Data Wrangling with tidyr
+# Episode 5: Data Wrangling with tidyr
 View(interviews)
 
 interviews %>% 
@@ -141,12 +141,7 @@ interviews_items_owned <- interviews_items_owned %>%
 # then we switch back from long to wide
 interviews_items_owned <- interviews_items_owned %>% 
   pivot_wider(names_from = items_owned, 
-              values_from = items_owned_logical) # see all those NAs
-              #values_fill = list(items_owned_logical = FALSE)
-# now we fix those NAs will values_fill argument
-interviews_items_owned <- interviews_items_owned %>% 
-  pivot_wider(names_from = items_owned, 
-              values_from = items_owned_logical, 
+              values_from = items_owned_logical,
               values_fill = list(items_owned_logical = FALSE))
 
 dim(interviews_items_owned) #back to 131 rows
@@ -160,8 +155,45 @@ interviews_items_owned %>%
   group_by(village) %>% 
   count(bicycle)
 
+table(interviews_items_owned$bicycle)
+
 interviews_items_owned %>% 
   select(-no_listed_items) %>% 
   mutate(number_items = rowSums(select(., bicycle:car))) %>% 
   group_by(village) %>% 
   summarize(mean_items = mean(number_items))
+
+# pivoting longer
+interviews_long <- interviews_items_owned %>% 
+  pivot_longer(cols = bicycle:car, 
+               names_to = "items_owned", 
+               values_to = "items_owned_logical")
+
+dim(interviews_long) #2358
+
+# Exercise: do together
+interviews_long %>% 
+  filter(items_owned_logical) %>% 
+  group_by(village) %>% 
+  count(items_owned)
+items_owned
+
+# cleaning out data and getting ready to plot
+interviews_plotting <- interviews %>% 
+  separate_longer_delim(items_owned, delim = ";") %>% 
+  replace_na(list(items_owned = "no_listed_items")) %>% 
+  mutate(items_owned_logical = TRUE) %>% 
+  pivot_wider(names_from = items_owned, 
+              values_from = items_owned_logical, 
+              values_fill = list(items_owned_logical = FALSE)) %>% 
+  #new content
+  separate_longer_delim(months_lack_food, delim = ";") %>% 
+  mutate(months_lack_food_logical = TRUE) %>% 
+  pivot_wider(names_from = months_lack_food, 
+              values_from = months_lack_food_logical, 
+              values_fill = list(months_lack_food_logical = FALSE)) %>% 
+  # summary stats
+  mutate(number_months_lack_food = rowSums(select(., Jan:May))) %>% 
+  mutate(number_items = rowSums(select(., bicycle:car)))
+
+write_csv(interviews_plotting, file = "data_output/interviews_plotting.csv")
