@@ -164,14 +164,103 @@ interviews_plotting <- interviews %>%
 # Export our new dataset
 write_csv(interviews_plotting, file = "data_output/interviews_plotting.csv")
 
+## ggplot2
+### Note: I'm compiling the code the day after teaching Data Carpentry to replicate what I covered yesterday b/c 
+### I accidentally closed my syntax file without saving the last episode but I still generally remember what I 
+### covered and what I skipped
 
+interviews_plotting %>% 
+  ggplot()
 
+interviews_plotting %>% 
+  ggplot(aes(x = no_membrs, y = number_items))
 
+# you'll see a plot once you add the geom
+interviews_plotting %>% 
+  ggplot(aes(x = no_membrs, y = number_items)) + geom_point()
 
+interviews_plotting %>% 
+  ggplot(aes(x = no_membrs, y = number_items)) + geom_point(alpha = 0.3)
 
+interviews_plotting %>% 
+  ggplot(aes(x = no_membrs, y = number_items)) + geom_jitter()
 
+# default jitter value is 40% so we can change with width/height arguments
+interviews_plotting %>% 
+  ggplot(aes(x = no_membrs, y = number_items)) + geom_jitter(alpha = 0.3, width = 0.2, height = 0.2)
 
+# now to add color
+interviews_plotting %>% 
+  ggplot(aes(x = no_membrs, y = number_items)) + geom_jitter(color = "blue", alpha = 0.3, width = 0.2, height = 0.2)
 
+# colors in R
+colors()
 
+# to add color based on a variable in your df
+interviews_plotting %>% 
+  ggplot(aes(x = no_membrs, y = number_items)) + geom_jitter(aes(color = village), alpha = 0.3, width = 0.2, height = 0.2)
 
+# can also add color in the main aes 
+interviews_plotting %>% 
+  ggplot(aes(x = no_membrs, y = number_items, color = village)) + geom_jitter(alpha = 0.3, width = 0.2, height = 0.2)
 
+# geom_count
+interviews_plotting %>% 
+  ggplot(aes(x = no_membrs, y = number_items, color = village)) + geom_count()
+
+# boxplot
+interviews_plotting %>% 
+  ggplot(aes(x = respondent_wall_type, y = rooms)) + geom_boxplot()
+
+# let's make the boxplot transparent and add back the points with geom_jitter
+interviews_plotting %>% 
+  ggplot(aes(x = respondent_wall_type, y = rooms)) + geom_boxplot(alpha = 0) + geom_jitter(alpha = 0.3, color = "tomato", width = 0.2, height = 0.2)
+
+# what if we changed the boxplot to a violin plot? 
+interviews_plotting %>% 
+  ggplot(aes(x = respondent_wall_type, y = rooms)) + geom_boxplot(alpha = 0) + geom_violin(alpha = 0.3, color = "tomato", width = 0.2, height = 0.2)
+
+# barplots
+interviews_plotting %>% 
+  ggplot(aes(x = respondent_wall_type)) + geom_bar()
+
+# we can fill the bars with counts from each village; this is a stacked bar chart
+interviews_plotting %>% 
+  ggplot(aes(x = respondent_wall_type)) + geom_bar(aes(fill = village))
+
+# to do a side-by-side barchart you add position
+interviews_plotting %>% 
+  ggplot(aes(x = respondent_wall_type)) + geom_bar(aes(fill = village), position = "dodge")
+
+# these are counts, but what if we wanted to compare proportions? we need to create a new dataframe
+percent_wall_type <- interviews_plotting %>% 
+  filter(respondent_wall_type != "cement") %>% 
+  count(village, respondent_wall_type) %>% 
+  group_by(village) %>% 
+  mutate(percent = (n/sum(n))* 100)
+
+# we'll now use the percent_wall_type dataframe to plot
+percent_wall_type %>% 
+  ggplot(aes(x = village, y = percent, fill = respondent_wall_type)) + geom_bar(stat = "identity", position = "dodge")
+
+# adding labels and titles
+percent_wall_type %>% 
+  ggplot(aes(x = village, y = percent, fill = respondent_wall_type)) + geom_bar(stat = "identity", position = "dodge") + labs(title = "Proportion of wall type by village", fill = "Type of wall in home", x = "Village", y = "Percent")
+
+# faceting
+percent_wall_type %>% 
+  ggplot(aes(x = respondent_wall_type, y = percent)) + geom_bar(stat = "identity", position = "dodge") + labs(title = "Proportion of wall type by village", x = "Wall Type", y = "Percent") + facet_wrap(~village)
+
+# to change the theme and remove the grid
+percent_wall_type %>% 
+  ggplot(aes(x = respondent_wall_type, y = percent)) + geom_bar(stat = "identity", position = "dodge") + labs(title = "Proportion of wall type by village", x = "Wall Type", y = "Percent") + facet_wrap(~village) + theme_bw() + theme(panel.grid = element_blank())
+
+# to create your own custom theme that you can apply to plots
+SK_theme <- theme(axis.text.x = element_text(color = "grey20", size = 12, angle = 45, hjust = 0.5, vjust = 0.5), 
+                  axis.text.y = element_text(color = "grey20", size = 12), 
+                  text = element_text(size = 16), 
+                  plot.title = element_text(hjust = 0.5))
+
+# try out your theme by adding it to our last plot
+percent_wall_type %>% 
+  ggplot(aes(x = respondent_wall_type, y = percent)) + geom_bar(stat = "identity", position = "dodge") + labs(title = "Proportion of wall type by village", x = "Wall Type", y = "Percent") + facet_wrap(~village) + theme_bw() + theme(panel.grid = element_blank()) + SK_theme
